@@ -257,7 +257,23 @@ const App: React.FC = () => {
                 {selectedTrip && (
                     <div className="modal fade show" style={{ display: 'block', background: 'rgba(0,0,0,0.5)' }} tabIndex={-1}>
                         <div className="modal-dialog modal-lg modal-dialog-centered">
-                            <div className={`modal-content ${darkMode ? 'bg-dark text-light' : ''}`}>...
+                            <div className={`modal-content ${darkMode ? 'bg-dark text-light' : ''}`}>
+                                <div className="modal-header">
+                                    <h5 className="modal-title">{selectedTrip.title}</h5>
+                                    <button type="button" className="btn-close" onClick={handleCloseModal}></button>
+                                </div>
+                                <div className="modal-body">
+                                    <img src={selectedTrip.image} alt={selectedTrip.title} className="img-fluid mb-3" style={{ maxHeight: 300, objectFit: 'cover' }} />
+                                    <p><strong>Date:</strong> {selectedTrip.date}</p>
+                                    <p><strong>Duration:</strong> {selectedTrip.duration}</p>
+                                    <p><strong>Description:</strong> {selectedTrip.description}</p>
+                                    <p><strong>Details:</strong> {selectedTrip.details}</p>
+                                </div>
+                                <div className="modal-footer">
+                                    <button className="btn btn-secondary" onClick={handleCloseModal}>Close</button>
+                                    <button className="btn btn-primary" onClick={handleDownloadPDF}>Download PDF</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -274,160 +290,6 @@ const App: React.FC = () => {
           </Routes>
         </div>
       </Router>
-    );
-                        <div className={`card-header ${darkMode ? 'bg-secondary text-light' : 'bg-secondary text-white'}`}>Trip Filters</div>
-                        <div className="card-body">
-                            <button className="btn btn-outline-primary w-100 mb-2">Past Trips</button>
-                            <button className="btn btn-outline-success w-100 mb-2">Future Trips</button>
-                            <input className="form-control mb-2" type="text" placeholder="Search Trips" />
-                            <button className="btn btn-outline-dark w-100">Download PDF</button>
-                        </div>
-                    </div>
-                    {/* Testimonials */}
-                    <div className={`card mb-3 ${darkMode ? 'bg-dark text-light' : ''}`}>
-                        <div className={`card-header ${darkMode ? 'bg-warning text-dark' : 'bg-warning text-dark'}`}>Testimonials</div>
-                        <div className="card-body">
-                            <blockquote className="blockquote mb-2">
-                                <p>"TravelMate made my dream vacation a reality!"</p>
-                                <footer className="blockquote-footer">Alex, USA</footer>
-                            </blockquote>
-                            <blockquote className="blockquote mb-2">
-                                <p>"The AI chatbot is a game changer for planning trips."</p>
-                                <footer className="blockquote-footer">Priya, India</footer>
-                            </blockquote>
-                            <blockquote className="blockquote mb-0">
-                                <p>"Easy, fast, and reliable. Highly recommended."</p>
-                                <footer className="blockquote-footer">Liam, UK</footer>
-                            </blockquote>
-                        </div>
-                    </div>
-                </aside>
-
-                {/* Main Section */}
-                <main className={`col-12 col-lg-9 ${darkMode ? 'text-light' : ''}`}>
-                    <div className="mb-3">
-                        <h2>Past Trips</h2>
-                        <div className="position-relative">
-                            {showPastArrows && (
-                                <>
-                                    <button
-                                        className="btn btn-secondary position-absolute top-50 start-0 translate-middle-y"
-                                        style={{ zIndex: 2 }}
-                                        onClick={() => scrollList(pastTripsRef, 'left')}
-                                        aria-label="Scroll left"
-                                    >&lt;</button>
-                                    <button
-                                        className="btn btn-secondary position-absolute top-50 end-0 translate-middle-y"
-                                        style={{ zIndex: 2 }}
-                                        onClick={() => scrollList(pastTripsRef, 'right')}
-                                        aria-label="Scroll right"
-                                    >&gt;</button>
-                                </>
-                            )}
-                            <div
-                                ref={pastTripsRef}
-                                className="d-flex flex-row overflow-auto g-3"
-                                style={{ scrollBehavior: 'smooth', gap: '1rem', paddingBottom: 8 }}
-                            >
-                                {pastTrips.map(trip => (
-                                    <div style={{ minWidth: 320, flex: '0 0 auto' }} key={trip.id}>
-                                        <TripCard trip={trip} onClick={handleTripClick} darkMode={darkMode} />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                    <div className="mb-3">
-                        <h2>Future Trips</h2>
-                        <div className="position-relative">
-                            {showFutureArrows && (
-                                <>
-                                    <button
-                                        className="btn btn-secondary position-absolute top-50 start-0 translate-middle-y"
-                                        style={{ zIndex: 2 }}
-                                        onClick={() => scrollList(futureTripsRef, 'left')}
-                                        aria-label="Scroll left"
-                                    >&lt;</button>
-                                    <button
-                                        className="btn btn-secondary position-absolute top-50 end-0 translate-middle-y"
-                                        style={{ zIndex: 2 }}
-                                        onClick={() => scrollList(futureTripsRef, 'right')}
-                                        aria-label="Scroll right"
-                                    >&gt;</button>
-                                </>
-                            )}
-                            <div
-                                ref={futureTripsRef}
-                                className="d-flex flex-row overflow-auto g-3"
-                                style={{ scrollBehavior: 'smooth', gap: '1rem', paddingBottom: 8 }}
-                            >
-                                {futureTrips.map(trip => (
-                                    <div style={{ minWidth: 320, flex: '0 0 auto' }} key={trip.id}>
-                                        <TripCard trip={trip} onClick={handleTripClick} darkMode={darkMode} />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Gallery Section */}
-                    <div className="mb-3">
-                        <h2>Gallery</h2>
-                        <div className="row row-cols-2 row-cols-md-4 g-3">
-                            <div className="col">
-                                <img src="https://images.unsplash.com/photo-1465156799763-2c087c332922?auto=format&fit=crop&w=400&q=80" className="img-fluid rounded shadow-sm" alt="Paris Gallery" />
-                            </div>
-                            <div className="col">
-                                <img src="https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=400&q=80" className="img-fluid rounded shadow-sm" alt="Tokyo Gallery" />
-                            </div>
-                            <div className="col">
-                                <img src="https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=400&q=80" className="img-fluid rounded shadow-sm" alt="Sydney Gallery" />
-                            </div>
-                            <div className="col">
-                                <img src="https://images.unsplash.com/photo-1467269204594-9661b134dd2b?auto=format&fit=crop&w=400&q=80" className="img-fluid rounded shadow-sm" alt="New York Gallery" />
-                            </div>
-                            {/* Add more images as needed */}
-                        </div>
-                    </div>
-
-                    {/* Enquiry/Suggestion Form */}
-                    <EnquiryForm darkMode={darkMode} />
-                </main>
-            </div>
-
-            {/* Trip Modal */}
-            {selectedTrip && (
-                <div className="modal fade show" style={{ display: 'block', background: 'rgba(0,0,0,0.5)' }} tabIndex={-1}>
-                    <div className="modal-dialog modal-lg modal-dialog-centered">
-                        <div className={`modal-content ${darkMode ? 'bg-dark text-light' : ''}`}>
-                            <div className="modal-header">
-                                <h5 className="modal-title">{selectedTrip.title}</h5>
-                                <button type="button" className="btn-close" onClick={handleCloseModal}></button>
-                            </div>
-                            <div className="modal-body">
-                                <img src={selectedTrip.image} alt={selectedTrip.title} className="img-fluid mb-3" style={{ maxHeight: 300, objectFit: 'cover' }} />
-                                <p><strong>Date:</strong> {selectedTrip.date}</p>
-                                <p><strong>Duration:</strong> {selectedTrip.duration}</p>
-                                <p><strong>Description:</strong> {selectedTrip.description}</p>
-                                <p><strong>Details:</strong> {selectedTrip.details}</p>
-                            </div>
-                            <div className="modal-footer">
-                                <button className="btn btn-secondary" onClick={handleCloseModal}>Close</button>
-                                <button className="btn btn-primary" onClick={handleDownloadPDF}>Download PDF</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Chatbot Panel (sticky at bottom on mobile, right on desktop) */}
-            <Chatbot darkMode={darkMode} />
-
-            {/* Footer */}
-            <footer className={`mt-auto py-3 text-center ${darkMode ? 'bg-dark text-light' : 'bg-dark text-white'}`}>
-                <small>© 2025 TravelMate. All rights reserved.</small>
-            </footer>
-        </div>
     );
 };
 

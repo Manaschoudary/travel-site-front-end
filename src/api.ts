@@ -44,6 +44,13 @@ export function logout() {
   removeToken();
 }
 
+export async function listTrips() {
+  const headers = authHeaders();
+  const res = await fetch(`${API_URL}/trips/`, headers ? { headers } : undefined);
+  if (!res.ok) throw new Error("Failed to fetch trips");
+  return res.json();
+}
+
 export async function getTrip(id: string) {
   const headers = authHeaders();
   const res = await fetch(`${API_URL}/trips/${id}`, headers ? { headers } : undefined);
