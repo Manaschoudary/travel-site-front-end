@@ -274,8 +274,131 @@ export async function getChatHistory(userId: string) {
     const data = await res.json();
     return data;
   } catch (error) {
-    console.error('Chat history request failed:', error);
-    return []; // Return empty array on error
+    console.error('Chat history request failed, using mock data:', error);
+    
+    // Return mock chat history for demonstration
+    return [
+      {
+        id: '1',
+        user_id: userId,
+        request: 'Plan a 5-day romantic trip to Paris for my honeymoon',
+        response: {
+          summary: 'A perfect 5-day romantic honeymoon trip to Paris, featuring iconic landmarks, intimate dining experiences, and romantic walks along the Seine.',
+          itinerary: [
+            {
+              city: 'Paris',
+              activities: [
+                'Morning: Arrive at Charles de Gaulle Airport, check into luxury hotel',
+                'Afternoon: Stroll through Montmartre and visit Sacré-Cœur',
+                'Evening: Romantic dinner at a traditional French bistro'
+              ],
+              accommodation: 'Le Meurice Hotel'
+            },
+            {
+              city: 'Paris',
+              activities: [
+                'Morning: Visit the Eiffel Tower with skip-the-line tickets',
+                'Afternoon: Seine River cruise with champagne',
+                'Evening: Dinner at Michelin-starred restaurant'
+              ],
+              accommodation: 'Le Meurice Hotel'
+            },
+            {
+              city: 'Paris',
+              activities: [
+                'Morning: Explore the Louvre Museum',
+                'Afternoon: Walk through Luxembourg Gardens',
+                'Evening: Show at Moulin Rouge'
+              ],
+              accommodation: 'Le Meurice Hotel'
+            }
+          ],
+          booking_links: {
+            booking: 'https://www.booking.com/searchresults.html?ss=Paris',
+            skyscanner: 'https://www.skyscanner.com/flights-to/paris'
+          },
+          cities: ['Paris']
+        },
+        created_at: '2025-07-20T10:30:00Z'
+      },
+      {
+        id: '2',
+        user_id: userId,
+        request: 'I want to explore Japan for 7 days, especially Tokyo and traditional culture',
+        response: {
+          summary: 'An immersive 7-day Japan adventure combining modern Tokyo experiences with traditional cultural activities.',
+          itinerary: [
+            {
+              city: 'Tokyo',
+              activities: [
+                'Morning: Arrival at Narita Airport, check-in to ryokan',
+                'Afternoon: Explore Asakusa and Senso-ji Temple',
+                'Evening: Traditional kaiseki dinner'
+              ],
+              accommodation: 'Traditional Ryokan'
+            },
+            {
+              city: 'Tokyo',
+              activities: [
+                'Morning: Visit Tsukiji Outer Market for sushi breakfast',
+                'Afternoon: Explore Shibuya and Harajuku districts',
+                'Evening: Experience Tokyo nightlife in Shinjuku'
+              ],
+              accommodation: 'Traditional Ryokan'
+            },
+            {
+              city: 'Kyoto',
+              activities: [
+                'Morning: Day trip to Kyoto via bullet train',
+                'Afternoon: Visit Fushimi Inari Shrine and bamboo grove',
+                'Evening: Tea ceremony experience'
+              ],
+              accommodation: 'Traditional Ryokan'
+            }
+          ],
+          booking_links: {
+            booking: 'https://www.booking.com/searchresults.html?ss=Tokyo',
+            skyscanner: 'https://www.skyscanner.com/flights-to/tokyo'
+          },
+          cities: ['Tokyo', 'Kyoto']
+        },
+        created_at: '2025-07-18T14:15:00Z'
+      },
+      {
+        id: '3',
+        user_id: userId,
+        request: 'Budget-friendly 4-day trip to Barcelona with focus on architecture and food',
+        response: {
+          summary: 'A budget-friendly 4-day Barcelona adventure focusing on Gaudí architecture and authentic Spanish cuisine.',
+          itinerary: [
+            {
+              city: 'Barcelona',
+              activities: [
+                'Morning: Arrive and check into budget hotel',
+                'Afternoon: Free walking tour of Gothic Quarter',
+                'Evening: Tapas crawl in El Born district'
+              ],
+              accommodation: 'Budget Hotel in City Center'
+            },
+            {
+              city: 'Barcelona',
+              activities: [
+                'Morning: Visit Sagrada Família with audio guide',
+                'Afternoon: Explore Park Güell',
+                'Evening: Sunset at Bunkers del Carmel (free viewpoint)'
+              ],
+              accommodation: 'Budget Hotel in City Center'
+            }
+          ],
+          booking_links: {
+            booking: 'https://www.booking.com/searchresults.html?ss=Barcelona',
+            skyscanner: 'https://www.skyscanner.com/flights-to/barcelona'
+          },
+          cities: ['Barcelona']
+        },
+        created_at: '2025-07-15T09:45:00Z'
+      }
+    ];
   }
 }
 

@@ -53,7 +53,15 @@ const Chatbot: React.FC<ChatbotProps> = ({ darkMode }) => {
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [activeItinerary, setActiveItinerary] = useState<TravelItinerary | null>(null);
-  const [userId] = useState(() => `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [userId] = useState(() => {
+    // Try to get existing user ID from localStorage or create a new one
+    let storedUserId = localStorage.getItem('travel_user_id');
+    if (!storedUserId) {
+      storedUserId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      localStorage.setItem('travel_user_id', storedUserId);
+    }
+    return storedUserId;
+  });
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 

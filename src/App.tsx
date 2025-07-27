@@ -5,6 +5,8 @@ import TripCard, { Trip } from './components/TripCard';
 import Chatbot from './components/Chatbot';
 import EnquiryForm from './components/EnquiryForm';
 import Gallery from './components/Gallery';
+import TripRequests from './components/TripRequests';
+import AuthModal from './components/AuthModal';
 import { listTrips } from './api';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 
@@ -111,6 +113,16 @@ const App: React.FC = () => {
                         </button>
                         <div className={`collapse navbar-collapse ${isNavbarOpen ? 'show' : ''}`} id="navbarNav">
                             <ul className="navbar-nav ms-auto align-items-center">
+                                <li className="nav-item">
+                                    <a 
+                                        className="nav-link" 
+                                        href="#trip-requests" 
+                                        style={{ fontWeight: '500' }}
+                                        onClick={() => setIsNavbarOpen(false)}
+                                    >
+                                        My Requests
+                                    </a>
+                                </li>
                                 <li className="nav-item">
                                     <a 
                                         className="nav-link" 
@@ -273,6 +285,9 @@ const App: React.FC = () => {
                                     </div>
                                 </div>
                             </section>
+
+                            {/* Trip Requests Section */}
+                            <TripRequests darkMode={darkMode} />
 
                             {/* Trips Section */}
                             <section id="trips" className={`py-5 ${darkMode ? 'bg-darker' : 'bg-white'}`}>
@@ -515,6 +530,13 @@ const App: React.FC = () => {
                                     </div>
                                 </div>
                             )}
+
+                            {/* Authentication Modal */}
+                            <AuthModal 
+                                darkMode={darkMode}
+                                isOpen={showAuthModal}
+                                onClose={() => setShowAuthModal(false)}
+                            />
                         </>
                     } />
                 </Routes>
