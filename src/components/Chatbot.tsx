@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { askChatbot } from '../api';
+import { askChatbot, getChatHistory } from '../api';
 import jsPDF from 'jspdf';
 
 interface ChatbotProps {
@@ -12,6 +12,31 @@ interface ChatMessage {
   message: string;
   isUser: boolean;
   timestamp: Date;
+  itinerary?: TravelItinerary;
+}
+
+interface TravelItinerary {
+  summary: string;
+  itinerary: ItineraryDay[];
+  booking_links: {
+    booking?: string;
+    skyscanner?: string;
+  };
+  cities: string[];
+}
+
+interface ItineraryDay {
+  city: string;
+  activities: string[];
+  accommodation?: string;
+}
+
+interface ChatHistory {
+  id: string;
+  user_id: string;
+  request: string;
+  response: TravelItinerary;
+  created_at: string;
 }
 
 const Chatbot: React.FC<ChatbotProps> = ({ darkMode }) => {
@@ -27,8 +52,9 @@ const Chatbot: React.FC<ChatbotProps> = ({ darkMode }) => {
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [itinerary, setItinerary] = useState<string | null>(null);
-  const [travelLinks, setTravelLinks] = useState<{ bookings?: string; skyscanner?: string }>({});
+  const [activeItinerary, setActiveItinerary] = useState<TravelItinerary | null>(null);
+  const [userId] = useState(() => `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -37,7 +63,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ darkMode }) => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, itinerary]);
+  }, [messages, activeItinerary]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -47,19 +73,146 @@ const Chatbot: React.FC<ChatbotProps> = ({ darkMode }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Extract itinerary and travel links from bot message
-  const parseBotMessage = (msg: string) => {
-    // Simple regex for Bookings.com and Skyscanner URLs
-    const bookingsMatch = msg.match(/https?:\/\/(www\.)?bookings?\.com\S*/i);
-    const skyscannerMatch = msg.match(/https?:\/\/(www\.)?skyscanner\.\S*/i);
-    setTravelLinks({
-      bookings: bookingsMatch ? bookingsMatch[0] : undefined,
-      skyscanner: skyscannerMatch ? skyscannerMatch[0] : undefined
+  // Load chat history when component mounts
+  useEffect(() => {
+    const loadChatHistory = async () => {
+      try {
+        const history = await getChatHistory(userId);
+        setChatHistory(history);
+        
+        // Add previous conversations to messages if any
+        if (history.length > 0) {
+          const historyMessages: ChatMessage[] = [];
+          history.slice(-3).forEach((chat: ChatHistory) => { // Show last 3 conversations
+            historyMessages.push({
+              id: `hist_${chat.id}_user`,
+              message: chat.request,
+              isUser: true,
+              timestamp: new Date(chat.created_at)
+            });
+            historyMessages.push({
+              id: `hist_${chat.id}_bot`,
+              message: chat.response.summary,
+              isUser: false,
+              timestamp: new Date(chat.created_at),
+              itinerary: chat.response
+            });
+          });
+          setMessages(prev => [...prev, ...historyMessages]);
+        }
+      } catch (error) {
+        console.error('Failed to load chat history:', error);
+      }
+    };
+
+    loadChatHistory();
+  }, [userId]);
+
+  const generatePDF = (itinerary: TravelItinerary) => {
+    const doc = new jsPDF();
+    let yPosition = 20;
+
+    // Title
+    doc.setFontSize(20);
+    doc.setTextColor(41, 128, 185);
+    doc.text('Travel Itinerary', 20, yPosition);
+    yPosition += 20;
+
+    // Summary
+    doc.setFontSize(14);
+    doc.setTextColor(52, 73, 94);
+    doc.text('Trip Summary:', 20, yPosition);
+    yPosition += 8;
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    const summaryLines = doc.splitTextToSize(itinerary.summary, 170);
+    doc.text(summaryLines, 20, yPosition);
+    yPosition += summaryLines.length * 6 + 15;
+
+    // Cities
+    if (itinerary.cities.length > 0) {
+      doc.setFontSize(14);
+      doc.setTextColor(52, 73, 94);
+      doc.text('Destinations:', 20, yPosition);
+      yPosition += 8;
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text(itinerary.cities.join(', '), 20, yPosition);
+      yPosition += 15;
+    }
+
+    // Daily itinerary
+    doc.setFontSize(16);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Daily Itinerary:', 20, yPosition);
+    yPosition += 15;
+
+    itinerary.itinerary.forEach((day, index) => {
+      if (yPosition > 250) {
+        doc.addPage();
+        yPosition = 20;
+      }
+
+      doc.setFontSize(14);
+      doc.setTextColor(231, 76, 60);
+      doc.text(`Day ${index + 1} - ${day.city}`, 20, yPosition);
+      yPosition += 10;
+
+      if (day.accommodation) {
+        doc.setFontSize(11);
+        doc.setTextColor(128, 128, 128);
+        doc.text(`🏨 ${day.accommodation}`, 25, yPosition);
+        yPosition += 8;
+      }
+
+      day.activities.forEach((activity) => {
+        if (yPosition > 270) {
+          doc.addPage();
+          yPosition = 20;
+        }
+
+        doc.setFontSize(11);
+        doc.setTextColor(0, 0, 0);
+        const activityLines = doc.splitTextToSize(`• ${activity}`, 160);
+        doc.text(activityLines, 25, yPosition);
+        yPosition += activityLines.length * 5 + 2;
+      });
+      yPosition += 8;
     });
 
-    // Extract itinerary section (simple: look for 'Itinerary:' and grab following lines)
-    const itineraryMatch = msg.match(/Itinerary:(.*?)(?:\n\n|$)/is);
-    setItinerary(itineraryMatch ? itineraryMatch[1].trim() : null);
+    // Booking links
+    if (itinerary.booking_links.booking || itinerary.booking_links.skyscanner) {
+      if (yPosition > 200) {
+        doc.addPage();
+        yPosition = 20;
+      }
+
+      doc.setFontSize(14);
+      doc.setTextColor(39, 174, 96);
+      doc.text('Booking Links:', 20, yPosition);
+      yPosition += 10;
+
+      if (itinerary.booking_links.booking) {
+        doc.setFontSize(11);
+        doc.setTextColor(0, 0, 0);
+        doc.text('Hotels: ', 25, yPosition);
+        doc.setTextColor(0, 0, 255);
+        doc.text(itinerary.booking_links.booking, 50, yPosition);
+        yPosition += 8;
+      }
+
+      if (itinerary.booking_links.skyscanner) {
+        doc.setFontSize(11);
+        doc.setTextColor(0, 0, 0);
+        doc.text('Flights: ', 25, yPosition);
+        doc.setTextColor(0, 0, 255);
+        doc.text(itinerary.booking_links.skyscanner, 50, yPosition);
+        yPosition += 8;
+      }
+    }
+
+    const destinationName = itinerary.cities[0] || 'travel';
+    doc.save(`${destinationName.toLowerCase().replace(/\s+/g, '_')}_itinerary.pdf`);
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -78,16 +231,25 @@ const Chatbot: React.FC<ChatbotProps> = ({ darkMode }) => {
     setIsTyping(true);
 
     try {
-      const response = await askChatbot(inputMessage);
-      const botMsg = response.response || response.message || 'I apologize, but I couldn\'t process that request.';
+      const response = await askChatbot(inputMessage, userId);
+      
+      // Check if response has itinerary data
+      const hasItinerary = response.itinerary && response.itinerary.length > 0;
+      
       const botMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        message: botMsg,
+        message: response.summary || 'I apologize, but I couldn\'t process that request.',
         isUser: false,
-        timestamp: new Date()
+        timestamp: new Date(),
+        itinerary: hasItinerary ? response : undefined
       };
+      
       setMessages(prev => [...prev, botMessage]);
-      parseBotMessage(botMsg);
+      
+      // Set active itinerary if found
+      if (hasItinerary) {
+        setActiveItinerary(response);
+      }
     } catch (error) {
       console.error('Chatbot error:', error);
       const errorMessage: ChatMessage = {
@@ -100,6 +262,43 @@ const Chatbot: React.FC<ChatbotProps> = ({ darkMode }) => {
     } finally {
       setIsTyping(false);
     }
+  };
+
+  const formatMessage = (message: string) => {
+    // Split into paragraphs and format
+    const paragraphs = message.split('\n\n').filter(p => p.trim());
+    
+    return paragraphs.map((paragraph, index) => {
+      // Format lists
+      if (paragraph.includes('•') || paragraph.includes('-')) {
+        const items = paragraph.split('\n').filter(item => item.trim());
+        return (
+          <ul key={index} className="mb-2 ps-3">
+            {items.map((item, itemIndex) => (
+              <li key={itemIndex} className="mb-1">
+                {item.replace(/^[•\-]\s*/, '')}
+              </li>
+            ))}
+          </ul>
+        );
+      }
+      
+      // Format headers (lines ending with :)
+      if (paragraph.endsWith(':')) {
+        return (
+          <h6 key={index} className="fw-bold mb-2 text-primary">
+            {paragraph}
+          </h6>
+        );
+      }
+      
+      // Regular paragraphs
+      return (
+        <p key={index} className="mb-2">
+          {paragraph}
+        </p>
+      );
+    });
   };
 
   // Show floating icon when closed
@@ -151,15 +350,31 @@ const Chatbot: React.FC<ChatbotProps> = ({ darkMode }) => {
                 className={`mb-3 d-flex ${msg.isUser ? 'justify-content-end' : 'justify-content-start'}`}
               >
                 <div
-                  className={`p-2 rounded-3 ${
+                  className={`p-3 rounded-3 ${
                     msg.isUser
                       ? 'bg-primary text-white ms-5'
-                      : `${darkMode ? 'bg-secondary text-light' : 'bg-light text-dark'} me-5`
+                      : `${darkMode ? 'bg-secondary text-light' : 'bg-white text-dark border'} me-5`
                   }`}
-                  style={{ maxWidth: '80%', wordBreak: 'break-word' }}
+                  style={{ maxWidth: '85%', wordBreak: 'break-word' }}
                 >
-                  <div className="small">{msg.message}</div>
-                  <div className="text-muted" style={{ fontSize: '0.7rem' }}>
+                  <div className="message-content">
+                    {msg.isUser ? (
+                      <div>{msg.message}</div>
+                    ) : (
+                      <div>{formatMessage(msg.message)}</div>
+                    )}
+                  </div>
+                  {msg.itinerary && (
+                    <div className="mt-2">
+                      <button 
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={() => setActiveItinerary(msg.itinerary!)}
+                      >
+                        📋 View Full Itinerary
+                      </button>
+                    </div>
+                  )}
+                  <div className="text-muted mt-2" style={{ fontSize: '0.75rem' }}>
                     {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
@@ -168,51 +383,113 @@ const Chatbot: React.FC<ChatbotProps> = ({ darkMode }) => {
             {isTyping && (
               <div className="mb-3 d-flex justify-content-start">
                 <div
-                  className={`p-2 rounded-3 ${darkMode ? 'bg-secondary text-light' : 'bg-light text-dark'} me-5`}
+                  className={`p-3 rounded-3 ${darkMode ? 'bg-secondary text-light' : 'bg-white text-dark border'} me-5`}
                   style={{ maxWidth: '80%' }}
                 >
-                  <div className="small">
-                    <span className="typing-indicator">
+                  <div className="d-flex align-items-center">
+                    <div className="typing-indicator me-2">
                       AI is typing
-                      <span className="dots">
-                        <span>.</span><span>.</span><span>.</span>
-                      </span>
-                    </span>
+                    </div>
+                    <div className="spinner-border spinner-border-sm" role="status">
+                      <span className="visually-hidden">Loading...</span>
+                    </div>
                   </div>
                 </div>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
-          {/* Itinerary and links section */}
-          {(itinerary || travelLinks.bookings || travelLinks.skyscanner) && (
-            <div className="px-3 pb-3">
-              {itinerary && (
-                <div className="mb-3">
-                  <h6 className="fw-bold">Your Itinerary</h6>
-                  <pre className="bg-light p-3 rounded" style={{ whiteSpace: 'pre-wrap', fontSize: '1rem', fontFamily: 'inherit' }}>{itinerary}</pre>
-                  <button className="btn btn-outline-primary btn-sm" onClick={() => {
-                    const doc = new jsPDF();
-                    doc.text(itinerary, 10, 20);
-                    doc.save('itinerary.pdf');
-                  }}>Download as PDF</button>
+          
+          {/* Enhanced Itinerary Display Section */}
+          {activeItinerary && (
+            <div className={`border-top p-3 ${darkMode ? 'bg-dark' : 'bg-light'}`} style={{ maxHeight: '300px', overflowY: 'auto' }}>
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className="mb-0 fw-bold text-primary">
+                  📋 Travel Itinerary: {activeItinerary.cities.join(', ')}
+                </h6>
+                <button 
+                  className="btn btn-sm btn-outline-secondary"
+                  onClick={() => setActiveItinerary(null)}
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="row mb-3">
+                <div className="col-6">
+                  <small className="text-muted">Destinations</small>
+                  <div className="fw-bold">{activeItinerary.cities.join(', ')}</div>
                 </div>
-              )}
-              {(travelLinks.bookings || travelLinks.skyscanner) && (
-                <div className="mb-2">
-                  <h6 className="fw-bold">Travel Links</h6>
-                  {travelLinks.bookings && (
-                    <div className="mb-1">
-                      <a href={travelLinks.bookings} target="_blank" rel="noopener noreferrer" className="btn btn-link p-0 text-primary">Bookings.com</a>
-                    </div>
-                  )}
-                  {travelLinks.skyscanner && (
-                    <div>
-                      <a href={travelLinks.skyscanner} target="_blank" rel="noopener noreferrer" className="btn btn-link p-0 text-primary">Skyscanner</a>
-                    </div>
-                  )}
+                <div className="col-6">
+                  <small className="text-muted">Days</small>
+                  <div className="fw-bold">{activeItinerary.itinerary.length} days</div>
                 </div>
-              )}
+              </div>
+
+              {/* Summary */}
+              <div className="mb-3">
+                <h6 className="fw-bold mb-2">Trip Summary</h6>
+                <p className="small text-muted">{activeItinerary.summary}</p>
+              </div>
+
+              {/* Daily Itinerary */}
+              <div className="mb-3">
+                <h6 className="fw-bold mb-2">Daily Plan</h6>
+                {activeItinerary.itinerary.map((day: ItineraryDay, index: number) => (
+                  <div key={index} className={`card mb-2 ${darkMode ? 'bg-secondary' : 'bg-white'}`}>
+                    <div className="card-header py-2">
+                      <small className="fw-bold">Day {index + 1} - {day.city}</small>
+                    </div>
+                    <div className="card-body py-2">
+                      {day.activities.map((activity: string, actIndex: number) => (
+                        <div key={actIndex} className="mb-2">
+                          <div className="d-flex align-items-start">
+                            <span className="badge bg-primary me-2" style={{ fontSize: '0.7rem' }}>
+                              {actIndex + 1}
+                            </span>
+                            <small className="flex-grow-1">{activity}</small>
+                          </div>
+                        </div>
+                      ))}
+                      {day.accommodation && (
+                        <div className="border-top pt-2 mt-2">
+                          <small className="text-muted">🏨 {day.accommodation}</small>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="d-flex gap-2 flex-wrap">
+                <button 
+                  className="btn btn-primary btn-sm pdf-download-btn"
+                  onClick={() => generatePDF(activeItinerary)}
+                >
+                  📄 Download PDF
+                </button>
+                {activeItinerary.booking_links?.skyscanner && (
+                  <a 
+                    href={activeItinerary.booking_links.skyscanner} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="btn btn-outline-primary btn-sm booking-link flights"
+                  >
+                    ✈️ Book Flights
+                  </a>
+                )}
+                {activeItinerary.booking_links?.booking && (
+                  <a 
+                    href={activeItinerary.booking_links.booking} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="btn btn-outline-primary btn-sm booking-link hotels"
+                  >
+                    🏨 Book Hotels
+                  </a>
+                )}
+              </div>
             </div>
           )}
           <div className="card-footer p-2 border-0 bg-transparent">
