@@ -4,6 +4,7 @@ import './styles.css';
 import TripCard, { Trip } from './components/TripCard';
 import Chatbot from './components/Chatbot';
 import EnquiryForm from './components/EnquiryForm';
+import Gallery from './components/Gallery';
 import { listTrips } from './api';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 
@@ -359,6 +360,9 @@ const App: React.FC = () => {
                                     </div>
                                 </div>
                             </section>
+
+                            {/* Gallery Section */}
+                            <Gallery darkMode={darkMode} />
 
                             {/* Contact Section */}
                             <section id="contact" className={`py-5 ${darkMode ? 'bg-dark' : 'bg-light'}`}>
