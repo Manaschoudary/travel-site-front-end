@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { login, register, loginWithGoogle, loginWithFacebook, loginWithApple } from '../api';
 
 interface AuthModalProps {
   darkMode: boolean;
@@ -88,21 +89,20 @@ const AuthModal: React.FC<AuthModalProps> = ({ darkMode, isOpen, onClose }) => {
     setIsLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      let result;
       
       if (isLogin) {
-        console.log('Login attempt:', { email: formData.email, password: formData.password });
-        // Here you would typically call your login API
-        alert('Login successful! (Demo)');
+        result = await login(formData.email, formData.password);
+        console.log('Login successful:', result);
+        alert('Login successful!');
       } else {
-        console.log('Registration attempt:', {
-          email: formData.email,
-          fullName: formData.fullName,
-          password: formData.password
+        result = await register(formData.email, formData.password, {
+          firstName: formData.fullName?.split(' ')[0] || '',
+          lastName: formData.fullName?.split(' ').slice(1).join(' ') || '',
+          country: 'US' // You could add a country field later
         });
-        // Here you would typically call your registration API
-        alert('Registration successful! (Demo)');
+        console.log('Registration successful:', result);
+        alert('Registration successful!');
       }
       
       // Reset form and close modal on success
@@ -114,17 +114,52 @@ const AuthModal: React.FC<AuthModalProps> = ({ darkMode, isOpen, onClose }) => {
         agreeToTerms: false
       });
       onClose();
-    } catch (error) {
+      
+      // You could also trigger a page refresh or redirect here
+      // window.location.reload();
+      
+    } catch (error: any) {
       console.error('Auth error:', error);
-      setErrors({ submit: 'Authentication failed. Please try again.' });
+      setErrors({ submit: error.message || 'Authentication failed. Please try again.' });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSocialAuth = (provider: 'google' | 'facebook' | 'apple') => {
-    console.log(`${provider} authentication attempted`);
-    alert(`${provider.charAt(0).toUpperCase() + provider.slice(1)} authentication (Demo)`);
+  const handleSocialAuth = async (provider: 'google' | 'facebook' | 'apple') => {
+    try {
+      setIsLoading(true);
+      let result;
+      
+      switch (provider) {
+        case 'google':
+          result = await loginWithGoogle();
+          break;
+        case 'facebook':
+          result = await loginWithFacebook();
+          break;
+        case 'apple':
+          result = await loginWithApple();
+          break;
+        default:
+          throw new Error('Unsupported provider');
+      }
+      
+      console.log(`${provider} authentication successful:`, result);
+      alert(`${provider.charAt(0).toUpperCase() + provider.slice(1)} authentication successful!`);
+      
+      // Close modal on success
+      onClose();
+      
+      // You could also trigger a page refresh or redirect here
+      // window.location.reload();
+      
+    } catch (error: any) {
+      console.error(`${provider} auth error:`, error);
+      setErrors({ submit: error.message || `${provider} authentication failed. Please try again.` });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const toggleMode = () => {
@@ -162,6 +197,17 @@ const AuthModal: React.FC<AuthModalProps> = ({ darkMode, isOpen, onClose }) => {
                 : 'Create an account to start planning your dream adventures'
               }
             </p>
+
+            {/* Demo credentials hint for login */}
+            {isLogin && (
+              <div className={`alert ${darkMode ? 'alert-dark' : 'alert-info'} mb-4`}>
+                <small>
+                  <strong>Demo credentials:</strong><br />
+                  Email: demo@example.com<br />
+                  Password: password
+                </small>
+              </div>
+            )}
 
             {/* Social Authentication Buttons */}
             <div className="mb-4">

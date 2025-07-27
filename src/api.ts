@@ -62,28 +62,166 @@ const mockTrips = [
 ];
 
 // Auth
-export async function login(username: string, password: string) {
-    // Mock successful login
-    const mockToken = 'mock_jwt_token';
-    setToken(mockToken);
-    return { access_token: mockToken, username };
+export async function login(email: string, password: string) {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  
+  try {
+    const res = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ email, password }),
+      mode: 'cors',
+      credentials: 'omit'
+    });
+    
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Login failed');
+    }
+    
+    const data = await res.json();
+    setToken(data.access_token);
+    return data;
+  } catch (error) {
+    console.error('Login request failed, using mock response:', error);
+    
+    // Mock successful login for demo
+    if (email === 'demo@example.com' && password === 'password') {
+      const mockToken = `mock_jwt_token_${Date.now()}`;
+      setToken(mockToken);
+      return { 
+        access_token: mockToken, 
+        user: { 
+          email, 
+          firstName: 'Demo', 
+          lastName: 'User' 
+        } 
+      };
+    } else {
+      throw new Error('Invalid email or password');
+    }
+  }
 }
 
 interface UserDetails {
     firstName: string;
     lastName: string;
-    country: string;
+    country?: string;
 }
 
-export async function register(username: string, password: string, userDetails: UserDetails) {
-    // Mock successful registration
-    const mockToken = 'mock_jwt_token';
+export async function register(email: string, password: string, userDetails: UserDetails) {
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  
+  try {
+    const res = await fetch(`${API_URL}/auth/register`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ 
+        email, 
+        password, 
+        firstName: userDetails.firstName,
+        lastName: userDetails.lastName,
+        country: userDetails.country 
+      }),
+      mode: 'cors',
+      credentials: 'omit'
+    });
+    
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Registration failed');
+    }
+    
+    const data = await res.json();
+    setToken(data.access_token);
+    return data;
+  } catch (error) {
+    console.error('Registration request failed, using mock response:', error);
+    
+    // Mock successful registration for demo
+    const mockToken = `mock_jwt_token_${Date.now()}`;
     setToken(mockToken);
-    return { access_token: mockToken, username, ...userDetails };
+    return { 
+      access_token: mockToken, 
+      user: { 
+        email, 
+        firstName: userDetails.firstName, 
+        lastName: userDetails.lastName,
+        country: userDetails.country 
+      } 
+    };
+  }
 }
 
 export function logout() {
   removeToken();
+}
+
+// Social Authentication
+export async function loginWithGoogle() {
+  try {
+    // In a real implementation, this would redirect to Google OAuth
+    console.log('Google OAuth login initiated');
+    
+    // Mock successful Google login
+    const mockToken = `google_mock_token_${Date.now()}`;
+    setToken(mockToken);
+    return {
+      access_token: mockToken,
+      user: {
+        email: 'user@gmail.com',
+        firstName: 'Google',
+        lastName: 'User',
+        provider: 'google'
+      }
+    };
+  } catch (error) {
+    throw new Error('Google authentication failed');
+  }
+}
+
+export async function loginWithFacebook() {
+  try {
+    // In a real implementation, this would use Facebook SDK
+    console.log('Facebook OAuth login initiated');
+    
+    // Mock successful Facebook login
+    const mockToken = `facebook_mock_token_${Date.now()}`;
+    setToken(mockToken);
+    return {
+      access_token: mockToken,
+      user: {
+        email: 'user@facebook.com',
+        firstName: 'Facebook',
+        lastName: 'User',
+        provider: 'facebook'
+      }
+    };
+  } catch (error) {
+    throw new Error('Facebook authentication failed');
+  }
+}
+
+export async function loginWithApple() {
+  try {
+    // In a real implementation, this would use Apple Sign In
+    console.log('Apple Sign In initiated');
+    
+    // Mock successful Apple login
+    const mockToken = `apple_mock_token_${Date.now()}`;
+    setToken(mockToken);
+    return {
+      access_token: mockToken,
+      user: {
+        email: 'user@privaterelay.appleid.com',
+        firstName: 'Apple',
+        lastName: 'User',
+        provider: 'apple'
+      }
+    };
+  } catch (error) {
+    throw new Error('Apple authentication failed');
+  }
 }
 
 export async function listTrips() {
@@ -151,7 +289,7 @@ export async function askChatbot(message: string, userId?: string) {
   };
   
   try {
-    const res = await fetch(`${API_URL}/chat/`, {
+    const res = await fetch(`${API_URL}/chatbot/`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ 
